@@ -17,13 +17,21 @@
 #define RTD_PATH "/root"
 #define TXT_PATH "/exe"
 #define MEM_PATH "/maps"
+#define FD_PATH "/fd"
 
 #define FD_CWD "cwd"
 #define FD_RTD "rtd"
 #define FD_TXT "txt"
+#define FD_MEM "mem"
+
+#define TYPE_BLK "BLK"
 #define TYPE_DIR "DIR"
 #define TYPE_REG "REG"
-#define TYPE_MEM "mem"
+#define TYPE_CHR "CHR"
+#define TYPE_FIFO "FIFO"
+#define TYPE_SOCK "SOCK"
+#define TYPE_LINK "LINK"
+#define TYPE_UNKNOWN "unknown"
 
 using namespace std;
 
@@ -38,6 +46,27 @@ Lsof::Lsof(std::vector<std::string> commandFilter,
     // printf("command %s\n", m_commandFilter[0].c_str());
     // printf("type %s\n", m_typeFilter[0].c_str());
     // printf("filenames %s\n", m_filenamesFilter[0].c_str());
+}
+
+const std::vector<std::string> split(const std::string& str, const std::string& pattern) {
+    std::vector<std::string> result;
+    std::string::size_type begin, end;
+
+    end = str.find(pattern);
+    begin = 0;
+
+    while (end != std::string::npos) {
+        if (end - begin != 0) {
+            result.push_back(str.substr(begin, end-begin)); 
+        }    
+        begin = end + pattern.size();
+        end = str.find(pattern, begin);
+    }
+
+    if (begin != str.length()) {
+        result.push_back(str.substr(begin));
+    }
+    return result;        
 }
 
 Lsof::~Lsof()
@@ -100,20 +129,9 @@ std::string Lsof::getName(std::string pid)
 
 int Lsof::getCwd(MSG &msg){
     std::string path = std::string(PROC_PATH) + "/" + msg.pid + std::string(CWD_PATH);
-
-    char buf[1024];
-    ssize_t len = readlink(path.c_str(), buf, sizeof(buf));
-    if (len != -1)
-    {
-        buf[len] = '\0';
-    }
-    else
-    {
-        // TODO error
-    }
     msg.fd = std::string(FD_CWD);
     msg.type = std::string(TYPE_DIR);
-    msg.name = std::string(buf, len);
+    msg.name = getLink(path);
     msg.node = getINode(msg.name);
     
     return 0;
@@ -121,20 +139,9 @@ int Lsof::getCwd(MSG &msg){
 
 int Lsof::getRtd(MSG &msg){
     std::string path = std::string(PROC_PATH) + "/" + msg.pid + std::string(RTD_PATH);
-
-    char buf[1024];
-    ssize_t len = readlink(path.c_str(), buf, sizeof(buf));
-    if (len != -1)
-    {
-        buf[len] = '\0';
-    }
-    else
-    {
-        // TODO error
-    }
     msg.fd = std::string(FD_RTD);
     msg.type = std::string(TYPE_DIR);
-    msg.name = std::string(buf, len);
+    msg.name = getLink(path);
     msg.node = getINode(msg.name);
     
     return 0;
@@ -142,22 +149,53 @@ int Lsof::getRtd(MSG &msg){
 
 int Lsof::getTxt(MSG &msg){
     std::string path = std::string(PROC_PATH) + "/" + msg.pid + std::string(TXT_PATH);
-
-    char buf[1024];
-    ssize_t len = readlink(path.c_str(), buf, sizeof(buf));
-    if (len != -1)
-    {
-        buf[len] = '\0';
-    }
-    else
-    {
-        // TODO error
-    }
     msg.fd = std::string(FD_TXT);
     msg.type = std::string(TYPE_REG);
-    msg.name = std::string(buf, len);
+    msg.name = getLink(path);
     msg.node = getINode(msg.name);
+    return 0;
+}
+
+int Lsof::getMem(MSG &msg)
+{
+    std::string path = std::string(PROC_PATH) + "/" + msg.pid + std::string(MEM_PATH);
+    std::vector<std::string> datas;
+    readFileToVector(path, datas);
     
+    int head, end = 0;
+    std::string name = "";
+    for (int i = 0; i < datas.size(); i++)
+    {
+        std::vector<std::string> result = split(datas[i], " ");
+        std::string rowName = result[result.size() -1];
+        std::string rowNode = result[result.size() -2];
+        // printf("node %s name %s \n",rowNode.c_str(), rowName.c_str());
+        if (rowNode.compare("00:00") != 0 &&rowNode.compare("0") != 0 && rowName.compare(name) != 0)
+        {
+            name = rowName;
+            msg.name = name;
+            msg.fd = FD_MEM;
+            msg.node = rowNode;
+            m_msgs.push_back(msg);
+        }
+    }
+    return 0;
+}
+
+int Lsof::getFd(MSG &msg)
+{
+    std::string path = std::string(PROC_PATH) + "/" + msg.pid + std::string(FD_PATH);
+    std::vector<std::string> dirList;
+    getDirList(path, dirList);
+    for (int i = 0; i< dirList.size(); i++)
+    {
+        // printf("dirList %s\n", dirList[i].c_str());
+        msg.fd = dirList[i] + "/" + getOpenMode(path + "/" + dirList[i]);
+        msg.type = getType(path + "/" + dirList[i]);
+        msg.name = getLink(path + "/" + dirList[i]);
+        msg.node = getINode(path + "/" + dirList[i]);
+        m_msgs.push_back(msg);
+    }
     return 0;
 }
 
@@ -168,6 +206,52 @@ std::string Lsof::getINode(std::string path)
     status = stat(path.c_str(), &buffer);
     // printf("st_ino %ld\n", buffer.st_ino);
     return std::to_string(buffer.st_ino);
+}
+
+std::string Lsof::getType(std::string path)
+{
+    struct stat buffer;
+    int         status;
+    status = stat(path.c_str(), &buffer);
+    std::string pathType(TYPE_UNKNOWN);
+    switch (buffer.st_mode & S_IFMT) {
+           case S_IFBLK:  pathType = TYPE_BLK;            break; // block device
+           case S_IFCHR:  pathType = TYPE_CHR;                 break; // character device
+           case S_IFDIR:  pathType = TYPE_DIR;                 break; // directory
+           case S_IFIFO:  pathType = TYPE_FIFO;                break; // FIFO/pipe
+           case S_IFLNK:  pathType = TYPE_LINK;                 break; // symlink
+           case S_IFREG:  pathType = TYPE_REG;                 break; // regular file
+           case S_IFSOCK: pathType = TYPE_SOCK;                break; // socket
+           default:       pathType = TYPE_UNKNOWN;             break; // unknown
+    }
+    return pathType;
+}
+
+std::string Lsof::getOpenMode(std::string path)
+{
+    struct stat buffer;
+    int         status;
+    status = stat(path.c_str(), &buffer);
+    // std::string pathType(TYPE_UNKNOWN);
+    int statchmod = buffer.st_mode & (S_IRWXU | S_IRWXG | S_IRWXO);
+    // printf("chmod: %o\n", statchmod);
+    return std::to_string(statchmod);
+}
+
+std::string Lsof::getLink(std::string path)
+{
+    char buf[1024];
+    ssize_t len = readlink(path.c_str(), buf, sizeof(buf));
+    if (len != -1)
+    {
+        buf[len] = '\0';
+    }
+    else
+    {
+        // TODO error
+        printf("path = %s\n", path.c_str());
+    }
+    return std::string(buf, len);
 }
 
 void Lsof::getStat(std::string path){
@@ -204,13 +288,29 @@ void Lsof::getPidFolder(std::string pid){
     m_msgs.push_back(msg);
     ret = getTxt(msg);
     m_msgs.push_back(msg);
+    ret = getMem(msg);
+    ret = getFd(msg);
     return;
+}
+
+int Lsof::getDirList(std::string path, std::vector<std::string> &dirlist)
+{
+    DIR *dp;
+    struct dirent *dirp;    
+    if ((dp = opendir(path.c_str())) == NULL)
+    {
+        printf("path %s read fial\n", path.c_str());
+        return errno;
+    }
+    while ((dirp = readdir(dp)) != NULL)
+    {
+        if (isNumber(dirp->d_name)) dirlist.push_back(dirp->d_name);
+    }
+    return 0;
 }
 
 int Lsof::run()
 {
-    printf("run\n");
-
     DIR *dp;
     struct dirent *dirp;    
     if ((dp = opendir(PROC_PATH)) == NULL)
@@ -218,7 +318,6 @@ int Lsof::run()
         printf("path %s read fial\n", PROC_PATH);
         return errno;
     }
-    printf ("COMMAND\tPID\tUSER\tFD\tTYPE\tNODE\tNAME\n");
     while ((dirp = readdir(dp)) != NULL)
     {
         if (isNumber(dirp->d_name)) getPidFolder(dirp->d_name);
@@ -229,6 +328,7 @@ int Lsof::run()
 
 int Lsof::show()
 {
+    printf ("COMMAND\tPID\tUSER\tFD\tTYPE\tNODE\tNAME\n");
     for (int i = 0; i < m_msgs.size(); i++)
     {
         MSG msg = m_msgs[i];

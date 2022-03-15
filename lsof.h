@@ -23,9 +23,15 @@ class Lsof{
         std::string getCommand(std::string pid);
         std::string getName(std::string pid);
         std::string getINode(std::string path);
+        std::string getType(std::string path);
+        std::string getOpenMode(std::string path);
+        std::string getLink(std::string path);
+        int getDirList(std::string path, std::vector<std::string> &dirlist);
         int getCwd(MSG &msg);
         int getRtd(MSG &msg);
         int getTxt(MSG &msg);
+        int getMem(MSG &msg);
+        int getFd(MSG &msg);
         void readFileToVector(std::string filePath, std::vector<std::string> &datas);
         std::vector<MSG> m_msgs;
     public:
