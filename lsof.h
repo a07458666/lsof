@@ -32,6 +32,7 @@ class Lsof{
         int getTxt(MSG &msg);
         int getMem(MSG &msg);
         int getFd(MSG &msg);
+        bool regexSearchMatch(MSG msg);
         void readFileToVector(std::string filePath, std::vector<std::string> &datas);
         std::vector<MSG> m_msgs;
     public:

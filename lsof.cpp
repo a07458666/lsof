@@ -8,7 +8,7 @@
 #include <fstream>
 #include <iostream>
 #include <unistd.h>
-#include <errno.h>
+#include <regex>
 
 #define PROC_PATH "/proc"
 #define COMM "/comm"
@@ -309,6 +309,40 @@ int Lsof::getDirList(std::string path, std::vector<std::string> &dirlist)
     return 0;
 }
 
+bool Lsof::regexSearchMatch(MSG msg)
+{
+    std::regex reg_type("REG");
+    std::regex reg_name("usr");
+    
+    if (m_commandFilter.size() > 0)
+    {
+        std::regex reg(m_commandFilter[0]);
+        if (!std::regex_search(msg.command.c_str(), reg))
+        {
+            return false;
+        }
+    }
+    
+    if (m_typeFilter.size() > 0)
+    {
+        std::regex reg(m_typeFilter[0]);
+        if (!std::regex_search(msg.type.c_str(), reg))
+        {
+            return false;
+        }
+    }
+
+    if (m_filenamesFilter.size() > 0)
+    {
+        std::regex reg(m_filenamesFilter[0]);
+        if (!std::regex_search(msg.name.c_str(), reg))
+        {
+            return false;
+        }
+    }  
+    return true;
+}
+
 int Lsof::run()
 {
     DIR *dp;
@@ -332,7 +366,10 @@ int Lsof::show()
     for (int i = 0; i < m_msgs.size(); i++)
     {
         MSG msg = m_msgs[i];
-        printf ("%s\t%s\t%s\t%s\t%s\t%s\t%s\n", msg.command.c_str(), msg.pid.c_str(), msg.user.c_str(), msg.fd.c_str(), msg.type.c_str(), msg.node.c_str(), msg.name.c_str());
+        if (regexSearchMatch(msg))
+        {
+            printf ("%s\t%s\t%s\t%s\t%s\t%s\t%s\n", msg.command.c_str(), msg.pid.c_str(), msg.user.c_str(), msg.fd.c_str(), msg.type.c_str(), msg.node.c_str(), msg.name.c_str());
+        }
     }
     return 0;
 }
