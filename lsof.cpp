@@ -23,6 +23,7 @@
 #define FD_RTD "rtd"
 #define FD_TXT "txt"
 #define FD_MEM "mem"
+#define FD_NOFO "NOFD"
 
 #define TYPE_BLK "BLK"
 #define TYPE_DIR "DIR"
@@ -33,6 +34,7 @@
 #define TYPE_LINK "LINK"
 #define TYPE_UNKNOWN "unknown"
 
+#define MSG_PD " (Permission denied)"
 using namespace std;
 
 Lsof::Lsof(std::vector<std::string> commandFilter,
@@ -186,16 +188,27 @@ int Lsof::getFd(MSG &msg)
 {
     std::string path = std::string(PROC_PATH) + "/" + msg.pid + std::string(FD_PATH);
     std::vector<std::string> dirList;
-    getDirList(path, dirList);
-    for (int i = 0; i< dirList.size(); i++)
+    int ret = getDirList(path, dirList);
+    if (ret == -1)
     {
-        // printf("dirList %s\n", dirList[i].c_str());
-        msg.fd = dirList[i] + "/" + getOpenMode(path + "/" + dirList[i]);
-        msg.type = getType(path + "/" + dirList[i]);
-        msg.name = getLink(path + "/" + dirList[i]);
-        msg.node = getINode(path + "/" + dirList[i]);
+        msg.fd = FD_NOFO;
+        msg.type = "\t";
+        msg.name = path + MSG_PD;
+        msg.node = "";
         m_msgs.push_back(msg);
     }
+    else {
+        for (int i = 0; i< dirList.size(); i++)
+        {
+            // printf("dirList %s\n", dirList[i].c_str());
+            msg.fd = dirList[i] + "/" + getOpenMode(path + "/" + dirList[i]);
+            msg.type = getType(path + "/" + dirList[i]);
+            msg.name = getLink(path + "/" + dirList[i]);
+            msg.node = getINode(path + "/" + dirList[i]);
+            m_msgs.push_back(msg);
+        }
+    }
+    
     return 0;
 }
 
@@ -250,7 +263,7 @@ std::string Lsof::getLink(std::string path)
     else
     {
         // printf("path = %s\n", path.c_str());
-        return path + " (Permission denied)";
+        return path + MSG_PD;
     }
 }
 
@@ -300,7 +313,7 @@ int Lsof::getDirList(std::string path, std::vector<std::string> &dirlist)
     if ((dp = opendir(path.c_str())) == NULL)
     {
         printf("path %s read fial\n", path.c_str());
-        return errno;
+        return -1;
     }
     while ((dirp = readdir(dp)) != NULL)
     {
