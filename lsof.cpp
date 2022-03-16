@@ -312,7 +312,7 @@ int Lsof::getDirList(std::string path, std::vector<std::string> &dirlist)
     struct dirent *dirp;    
     if ((dp = opendir(path.c_str())) == NULL)
     {
-        printf("path %s read fial\n", path.c_str());
+        // printf("path %s read fial\n", path.c_str());
         return -1;
     }
     while ((dirp = readdir(dp)) != NULL)
