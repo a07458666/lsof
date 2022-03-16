@@ -33,7 +33,7 @@ class Lsof{
         int getMem(MSG &msg);
         int getFd(MSG &msg);
         bool regexSearchMatch(MSG msg);
-        void readFileToVector(std::string filePath, std::vector<std::string> &datas);
+        int readFileToVector(std::string filePath, std::vector<std::string> &datas);
         std::vector<MSG> m_msgs;
     public:
         Lsof(std::vector<std::string> commandFilter, std::vector<std::string> typeFilter, std::vector<std::string> filenamesFilter);

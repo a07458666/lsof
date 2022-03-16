@@ -84,7 +84,7 @@ bool Lsof::isNumber(const std::string& str)
 }
 
 
-void Lsof::readFileToVector(string filePath, std::vector<std::string> &datas)
+int Lsof::readFileToVector(string filePath, std::vector<std::string> &datas)
 {
     std::ifstream ifs(filePath, std::ios::in);
     if (!ifs.is_open()) {
@@ -98,7 +98,7 @@ void Lsof::readFileToVector(string filePath, std::vector<std::string> &datas)
         ifs.close();
     }
     ifs.close();
-    return ;
+    return 0;
 }
 
 std::string Lsof::getCommand(std::string pid)
@@ -162,8 +162,8 @@ int Lsof::getMem(MSG &msg)
 {
     std::string path = std::string(PROC_PATH) + "/" + msg.pid + std::string(MEM_PATH);
     std::vector<std::string> datas;
-    readFileToVector(path, datas);
-    
+    int ret = readFileToVector(path, datas);
+    if (ret == -1) return -1;
     int head, end = 0;
     std::string name = "";
     for (int i = 0; i < datas.size(); i++)
