@@ -245,13 +245,13 @@ std::string Lsof::getLink(std::string path)
     if (len != -1)
     {
         buf[len] = '\0';
+        return std::string(buf, len);
     }
     else
     {
-        // TODO error
-        printf("path = %s\n", path.c_str());
+        // printf("path = %s\n", path.c_str());
+        return path + " (Permission denied)";
     }
-    return std::string(buf, len);
 }
 
 void Lsof::getStat(std::string path){
