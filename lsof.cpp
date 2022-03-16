@@ -88,7 +88,8 @@ int Lsof::readFileToVector(string filePath, std::vector<std::string> &datas)
 {
     std::ifstream ifs(filePath, std::ios::in);
     if (!ifs.is_open()) {
-        printf("Failed to open file Path = %s\n", filePath.c_str());
+        // printf("Failed to open file Path = %s\n", filePath.c_str());
+        return -1;
     } else {
         std::string s;
         while (std::getline(ifs, s)) {
