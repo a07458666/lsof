@@ -335,9 +335,9 @@ int Lsof::checkDel(MSG &msg)
     int end = msg.name.find(DEL_MSG);
     // printf("head %d, end %d \n",  head, end);
     if (end != std::string::npos) {
+        printf ("DEL_MSG = %s\t%s\t%s\t%s\t%s\t%s\t%s\n", msg.command.c_str(), msg.pid.c_str(), msg.user.c_str(), msg.fd.c_str(), msg.type.c_str(), msg.node.c_str(), msg.name.c_str());
         msg.fd = FD_DEL;
         msg.name = msg.name.substr(head, end - head);
-        printf ("DEL_MSG = %s\t%s\t%s\t%s\t%s\t%s\t%s\n", msg.command.c_str(), msg.pid.c_str(), msg.user.c_str(), msg.fd.c_str(), msg.type.c_str(), msg.node.c_str(), msg.name.c_str());
     }
     return 0;
 }
