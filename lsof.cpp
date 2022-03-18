@@ -261,7 +261,7 @@ int Lsof::getLink(std::string path, std::string &link)
 {
     char buf[1024];
     ssize_t len = readlink(path.c_str(), buf, sizeof(buf));
-    if (len != -1)
+    if (len != std::string::npos)
     {
         buf[len] = '\0';
         link = std::string(buf, len);
@@ -334,9 +334,10 @@ int Lsof::checkDel(MSG &msg)
     int head = 0;
     int end = msg.name.find(DEL_MSG);
     // printf("head %d, end %d \n",  head, end);
-    if (end != -1) {
+    if (end != std::string::npos) {
         msg.fd = FD_DEL;
         msg.name = msg.name.substr(head, end - head);
+        printf ("DEL_MSG = %s\t%s\t%s\t%s\t%s\t%s\t%s\n", msg.command.c_str(), msg.pid.c_str(), msg.user.c_str(), msg.fd.c_str(), msg.type.c_str(), msg.node.c_str(), msg.name.c_str());
     }
     return 0;
 }
