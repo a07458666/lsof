@@ -38,7 +38,10 @@
 #define DEL_MSG "(deleted)"
 #define MSG_PD " (Permission denied)"
 #define ERR -1
+#define MEM_NAME_INDEX 5
+#define MEM_INODE_INDEX 4
 using namespace std;
+
 
 Lsof::Lsof(std::vector<std::string> commandFilter,
            std::vector<std::string> typeFilter,
@@ -159,10 +162,10 @@ int Lsof::getMem(MSG &msg)
     for (int i = 0; i < datas.size(); i++)
     {
         std::vector<std::string> result = split(datas[i], " ");
-        std::string rowName = result[result.size() -1];
-        std::string rowNode = result[result.size() -2];
+        std::string rowName = (result.size() > MEM_NAME_INDEX) ? result[MEM_NAME_INDEX] : "";
+        std::string rowNode = (result.size() > MEM_INODE_INDEX) ? result[MEM_INODE_INDEX] : "";
         // printf("node %s name %s \n",rowNode.c_str(), rowName.c_str());
-        if (rowNode.compare("00:00") != 0 &&rowNode.compare("0") != 0 && rowName.compare(name) != 0)
+        if (rowNode.compare("0") != 0 && rowName.compare(name) != 0)
         {
             name = rowName;
             msg.name = name;
@@ -335,7 +338,6 @@ int Lsof::checkDel(MSG &msg)
     int end = msg.name.find(DEL_MSG);
     // printf("head %d, end %d \n",  head, end);
     if (end != std::string::npos) {
-        printf ("DEL_MSG = %s\t%s\t%s\t%s\t%s\t%s\t%s\n", msg.command.c_str(), msg.pid.c_str(), msg.user.c_str(), msg.fd.c_str(), msg.type.c_str(), msg.node.c_str(), msg.name.c_str());
         msg.fd = FD_DEL;
         msg.name = msg.name.substr(head, end - head);
     }
