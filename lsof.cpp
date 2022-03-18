@@ -23,6 +23,7 @@
 #define FD_RTD "rtd"
 #define FD_TXT "txt"
 #define FD_MEM "mem"
+#define FD_DEL "DEL"
 #define FD_NOFO "NOFD"
 
 #define TYPE_BLK "BLK"
@@ -35,6 +36,7 @@
 #define TYPE_UNKNOWN "unknown"
 
 #define MSG_PD " (Permission denied)"
+#define ERR -1
 using namespace std;
 
 Lsof::Lsof(std::vector<std::string> commandFilter,
@@ -89,7 +91,7 @@ int Lsof::readFileToVector(string filePath, std::vector<std::string> &datas)
     std::ifstream ifs(filePath, std::ios::in);
     if (!ifs.is_open()) {
         // printf("Failed to open file Path = %s\n", filePath.c_str());
-        return -1;
+        return ERR;
     } else {
         std::string s;
         while (std::getline(ifs, s)) {
@@ -192,7 +194,7 @@ int Lsof::getMem(MSG &msg)
     std::string path = std::string(PROC_PATH) + "/" + msg.pid + std::string(MEM_PATH);
     std::vector<std::string> datas;
     int ret = readFileToVector(path, datas);
-    if (ret == -1) return -1;
+    if (ret == ERR) return ERR;
     int head, end = 0;
     std::string name = "";
     for (int i = 0; i < datas.size(); i++)
@@ -219,7 +221,7 @@ int Lsof::getFd(MSG &msg)
     std::string path = std::string(PROC_PATH) + "/" + msg.pid + std::string(FD_PATH);
     std::vector<std::string> dirList;
     int ret = getDirList(path, dirList);
-    if (ret == -1)
+    if (ret == ERR)
     {
         msg.fd = FD_NOFO;
         msg.type = "\t";
@@ -327,7 +329,7 @@ int Lsof::getLink(std::string path, std::string &link)
     else
     {
         link = path + MSG_PD;
-        return -1;
+        return ERR;
     }
 }
 
@@ -377,11 +379,23 @@ int Lsof::getDirList(std::string path, std::vector<std::string> &dirlist)
     if ((dp = opendir(path.c_str())) == NULL)
     {
         // printf("path %s read fial\n", path.c_str());
-        return -1;
+        return ERR;
     }
     while ((dirp = readdir(dp)) != NULL)
     {
         if (isNumber(dirp->d_name)) dirlist.push_back(dirp->d_name);
+    }
+    return 0;
+}
+
+int Lsof::checkDel(MSG &msg)
+{
+    int head = 0;
+    int end = msg.name.find("(deleted)");
+    // printf("head %d, end %d \n",  head, end);
+    if (end != -1) {
+        msg.fd = FD_DEL;
+        msg.name = msg.name.substr(head, end - head);
     }
     return 0;
 }
@@ -443,6 +457,7 @@ int Lsof::show()
     for (int i = 0; i < m_msgs.size(); i++)
     {
         MSG msg = m_msgs[i];
+        int ret = checkDel(msg);
         if (regexSearchMatch(msg))
         {
             printf ("%s\t%s\t%s\t%s\t%s\t%s\t%s\n", msg.command.c_str(), msg.pid.c_str(), msg.user.c_str(), msg.fd.c_str(), msg.type.c_str(), msg.node.c_str(), msg.name.c_str());
