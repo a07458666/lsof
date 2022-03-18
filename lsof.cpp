@@ -180,6 +180,7 @@ int Lsof::getMem(MSG &msg)
             msg.fd = FD_MEM;
             msg.node = rowNode;
             m_msgs.push_back(msg);
+            //TODO:check (deleted)
         }
     }
     return 0;
@@ -202,7 +203,7 @@ int Lsof::getFd(MSG &msg)
         for (int i = 0; i< dirList.size(); i++)
         {
             // printf("dirList %s\n", dirList[i].c_str());
-            msg.fd = dirList[i] + "/" + getOpenMode(path + "/" + dirList[i]);
+            msg.fd = dirList[i] + getOpenMode(path + "/" + dirList[i]);
             msg.type = getType(path + "/" + dirList[i]);
             msg.name = getLink(path + "/" + dirList[i]);
             msg.node = getINode(path + "/" + dirList[i]);
@@ -245,11 +246,15 @@ std::string Lsof::getOpenMode(std::string path)
 {
     struct stat buffer;
     int         status;
-    status = stat(path.c_str(), &buffer);
-    // std::string pathType(TYPE_UNKNOWN);
-    int statchmod = buffer.st_mode & (S_IRWXU | S_IRWXG | S_IRWXO);
-    // printf("chmod: %o\n", statchmod);
-    return std::to_string(statchmod);
+    status = lstat(path.c_str(), &buffer);
+    std::string rwu = "";
+    switch ( buffer.st_mode & (S_IRUSR | S_IWUSR)) {
+           case (S_IRUSR | S_IWUSR):  rwu = "u";            break;
+           case S_IRUSR:              rwu = "r";            break;
+           case S_IWUSR:              rwu = "w";            break;
+           default:                   rwu = "";            break;
+    }
+    return rwu;
 }
 
 std::string Lsof::getLink(std::string path)
@@ -264,6 +269,7 @@ std::string Lsof::getLink(std::string path)
     else
     {
         // printf("path = %s\n", path.c_str());
+        // TODO type need update(unknown)
         return path + MSG_PD;
     }
 }
