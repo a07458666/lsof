@@ -231,10 +231,22 @@ int Lsof::getFd(MSG &msg)
         for (int i = 0; i< dirList.size(); i++)
         {
             // printf("dirList %s\n", dirList[i].c_str());
+            std::string link;
+            ret = getLink(path + "/" + dirList[i], link);
             msg.fd = dirList[i] + getOpenMode(path + "/" + dirList[i]);
+            msg.name = link;
             msg.type = getType(path + "/" + dirList[i]);
-            msg.name = getLink(path + "/" + dirList[i]);
             msg.node = getINode(path + "/" + dirList[i]);
+            if (ret == 0)
+            {
+                msg.type = getType(path + "/" + dirList[i]);
+                msg.node = getINode(path + "/" + dirList[i]);
+            }
+            else
+            {
+                msg.type = std::string(TYPE_UNKNOWN);
+                msg.node = "";
+            } 
             m_msgs.push_back(msg);
         }
     }
@@ -285,22 +297,22 @@ std::string Lsof::getOpenMode(std::string path)
     return rwu;
 }
 
-std::string Lsof::getLink(std::string path)
-{
-    char buf[1024];
-    ssize_t len = readlink(path.c_str(), buf, sizeof(buf));
-    if (len != -1)
-    {
-        buf[len] = '\0';
-        return std::string(buf, len);
-    }
-    else
-    {
-        // printf("path = %s\n", path.c_str());
-        // TODO type need update(unknown)
-        return path + MSG_PD;
-    }
-}
+// std::string Lsof::getLink(std::string path)
+// {
+//     char buf[1024];
+//     ssize_t len = readlink(path.c_str(), buf, sizeof(buf));
+//     if (len != -1)
+//     {
+//         buf[len] = '\0';
+//         return std::string(buf, len);
+//     }
+//     else
+//     {
+//         // printf("path = %s\n", path.c_str());
+//         // TODO type need update(unknown)
+//         return path + MSG_PD;
+//     }
+// }
 
 int Lsof::getLink(std::string path, std::string &link)
 {

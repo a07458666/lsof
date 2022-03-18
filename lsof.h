@@ -25,7 +25,7 @@ class Lsof{
         std::string getINode(std::string path);
         std::string getType(std::string path);
         std::string getOpenMode(std::string path);
-        std::string getLink(std::string path);
+        // std::string getLink(std::string path);
         int getLink(std::string path, std::string &link);
         int getDirList(std::string path, std::vector<std::string> &dirlist);
         int getMsg(MSG &msg, std::string fdPath, std::string fd, std::string fdType);
