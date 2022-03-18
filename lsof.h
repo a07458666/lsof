@@ -26,12 +26,15 @@ class Lsof{
         std::string getType(std::string path);
         std::string getOpenMode(std::string path);
         std::string getLink(std::string path);
+        int getLink(std::string path, std::string &link);
         int getDirList(std::string path, std::vector<std::string> &dirlist);
-        int getCwd(MSG &msg);
-        int getRtd(MSG &msg);
-        int getTxt(MSG &msg);
+        int getMsg(MSG &msg, std::string fdPath, std::string fd, std::string fdType);
+        // int getCwd(MSG &msg);
+        // int getRtd(MSG &msg);
+        // int getTxt(MSG &msg);
         int getMem(MSG &msg);
         int getFd(MSG &msg);
+
         bool regexSearchMatch(MSG msg);
         int readFileToVector(std::string filePath, std::vector<std::string> &datas);
         std::vector<MSG> m_msgs;

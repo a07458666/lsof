@@ -130,34 +130,62 @@ std::string Lsof::getName(std::string pid)
     return name;
 }
 
-int Lsof::getCwd(MSG &msg){
-    std::string path = std::string(PROC_PATH) + "/" + msg.pid + std::string(CWD_PATH);
-    msg.fd = std::string(FD_CWD);
-    msg.type = std::string(TYPE_DIR);
-    msg.name = getLink(path);
-    msg.node = getINode(msg.name);
+// int Lsof::getCwd(MSG &msg){
+//     std::string path = std::string(PROC_PATH) + "/" + msg.pid + std::string(CWD_PATH);
+//     msg.fd = std::string(FD_CWD);
+//     msg.name = getLink(path);
+//     msg.type = std::string(TYPE_DIR);
+//     msg.node = getINode(msg.name);
     
+//     return 0;
+// }
+
+// int Lsof::getRtd(MSG &msg){
+//     std::string path = std::string(PROC_PATH) + "/" + msg.pid + std::string(RTD_PATH);
+//     std::string link;
+//     int ret = getLink(path, link);
+//     msg.fd = std::string(FD_RTD);
+//     msg.name = link;
+//     if (ret == 0)
+//     {
+//         msg.type = std::string(TYPE_DIR);
+//         msg.node = getINode(msg.name);
+//     }
+//     else
+//     {
+//         msg.type = std::string(TYPE_UNKNOWN);
+//         msg.node = "";
+//     } 
+//     return 0;
+// }
+
+int Lsof::getMsg(MSG &msg, std::string fdPath, std::string fd, std::string fdType){
+    std::string path = std::string(PROC_PATH) + "/" + msg.pid + std::string(fdPath);
+    std::string link;
+    int ret = getLink(path, link);
+    msg.fd = std::string(fd);
+    msg.name = link;
+    if (ret == 0)
+    {
+        msg.type = std::string(fdType);
+        msg.node = getINode(msg.name);
+    }
+    else
+    {
+        msg.type = std::string(TYPE_UNKNOWN);
+        msg.node = "";
+    } 
     return 0;
 }
 
-int Lsof::getRtd(MSG &msg){
-    std::string path = std::string(PROC_PATH) + "/" + msg.pid + std::string(RTD_PATH);
-    msg.fd = std::string(FD_RTD);
-    msg.type = std::string(TYPE_DIR);
-    msg.name = getLink(path);
-    msg.node = getINode(msg.name);
-    
-    return 0;
-}
-
-int Lsof::getTxt(MSG &msg){
-    std::string path = std::string(PROC_PATH) + "/" + msg.pid + std::string(TXT_PATH);
-    msg.fd = std::string(FD_TXT);
-    msg.type = std::string(TYPE_REG);
-    msg.name = getLink(path);
-    msg.node = getINode(msg.name);
-    return 0;
-}
+// int Lsof::getTxt(MSG &msg){
+//     std::string path = std::string(PROC_PATH) + "/" + msg.pid + std::string(TXT_PATH);
+//     msg.fd = std::string(FD_TXT);
+//     msg.name = getLink(path);
+//     msg.type = std::string(TYPE_REG);
+//     msg.node = getINode(msg.name);
+//     return 0;
+// }
 
 int Lsof::getMem(MSG &msg)
 {
@@ -274,6 +302,23 @@ std::string Lsof::getLink(std::string path)
     }
 }
 
+int Lsof::getLink(std::string path, std::string &link)
+{
+    char buf[1024];
+    ssize_t len = readlink(path.c_str(), buf, sizeof(buf));
+    if (len != -1)
+    {
+        buf[len] = '\0';
+        link = std::string(buf, len);
+        return 0;
+    }
+    else
+    {
+        link = path + MSG_PD;
+        return -1;
+    }
+}
+
 void Lsof::getStat(std::string path){
     struct stat buffer;
     int         status;
@@ -302,11 +347,11 @@ void Lsof::getPidFolder(std::string pid){
     msg.pid = pid;
     msg.command = getCommand(pid);
     msg.user = getName(pid);
-    int ret = getCwd(msg);
+    int ret = getMsg(msg, CWD_PATH, FD_CWD, TYPE_DIR);
     m_msgs.push_back(msg);
-    ret = getRtd(msg);
+    ret = getMsg(msg, RTD_PATH, FD_RTD, TYPE_DIR);
     m_msgs.push_back(msg);
-    ret = getTxt(msg);
+    ret = getMsg(msg, TXT_PATH, FD_TXT, TYPE_REG);
     m_msgs.push_back(msg);
     ret = getMem(msg);
     ret = getFd(msg);
