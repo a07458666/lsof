@@ -33,3 +33,8 @@ kworker/0:0H-events_highpri             6               root            rtd     
 kworker/0:0H-events_highpri             6               root            txt             unknown                         /proc/6/exe (Permission denied)
 ...
 ```
+
+## build hw1
+```
+make
+```
