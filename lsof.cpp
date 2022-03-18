@@ -35,6 +35,7 @@
 #define TYPE_LINK "LINK"
 #define TYPE_UNKNOWN "unknown"
 
+#define DEL_MSG "(deleted)"
 #define MSG_PD " (Permission denied)"
 #define ERR -1
 using namespace std;
@@ -46,10 +47,6 @@ Lsof::Lsof(std::vector<std::string> commandFilter,
     m_commandFilter = commandFilter;
     m_typeFilter = typeFilter;
     m_filenamesFilter = filenamesFilter;
-
-    // printf("command %s\n", m_commandFilter[0].c_str());
-    // printf("type %s\n", m_typeFilter[0].c_str());
-    // printf("filenames %s\n", m_filenamesFilter[0].c_str());
 }
 
 const std::vector<std::string> split(const std::string& str, const std::string& pattern) {
@@ -132,35 +129,6 @@ std::string Lsof::getName(std::string pid)
     return name;
 }
 
-// int Lsof::getCwd(MSG &msg){
-//     std::string path = std::string(PROC_PATH) + "/" + msg.pid + std::string(CWD_PATH);
-//     msg.fd = std::string(FD_CWD);
-//     msg.name = getLink(path);
-//     msg.type = std::string(TYPE_DIR);
-//     msg.node = getINode(msg.name);
-    
-//     return 0;
-// }
-
-// int Lsof::getRtd(MSG &msg){
-//     std::string path = std::string(PROC_PATH) + "/" + msg.pid + std::string(RTD_PATH);
-//     std::string link;
-//     int ret = getLink(path, link);
-//     msg.fd = std::string(FD_RTD);
-//     msg.name = link;
-//     if (ret == 0)
-//     {
-//         msg.type = std::string(TYPE_DIR);
-//         msg.node = getINode(msg.name);
-//     }
-//     else
-//     {
-//         msg.type = std::string(TYPE_UNKNOWN);
-//         msg.node = "";
-//     } 
-//     return 0;
-// }
-
 int Lsof::getMsg(MSG &msg, std::string fdPath, std::string fd, std::string fdType){
     std::string path = std::string(PROC_PATH) + "/" + msg.pid + std::string(fdPath);
     std::string link;
@@ -179,15 +147,6 @@ int Lsof::getMsg(MSG &msg, std::string fdPath, std::string fd, std::string fdTyp
     } 
     return 0;
 }
-
-// int Lsof::getTxt(MSG &msg){
-//     std::string path = std::string(PROC_PATH) + "/" + msg.pid + std::string(TXT_PATH);
-//     msg.fd = std::string(FD_TXT);
-//     msg.name = getLink(path);
-//     msg.type = std::string(TYPE_REG);
-//     msg.node = getINode(msg.name);
-//     return 0;
-// }
 
 int Lsof::getMem(MSG &msg)
 {
@@ -210,7 +169,6 @@ int Lsof::getMem(MSG &msg)
             msg.fd = FD_MEM;
             msg.node = rowNode;
             m_msgs.push_back(msg);
-            //TODO:check (deleted)
         }
     }
     return 0;
@@ -237,8 +195,8 @@ int Lsof::getFd(MSG &msg)
             ret = getLink(path + "/" + dirList[i], link);
             msg.fd = dirList[i] + getOpenMode(path + "/" + dirList[i]);
             msg.name = link;
-            msg.type = getType(path + "/" + dirList[i]);
-            msg.node = getINode(path + "/" + dirList[i]);
+            // msg.type = getType(path + "/" + dirList[i]);
+            // msg.node = getINode(path + "/" + dirList[i]);
             if (ret == 0)
             {
                 msg.type = getType(path + "/" + dirList[i]);
@@ -298,23 +256,6 @@ std::string Lsof::getOpenMode(std::string path)
     }
     return rwu;
 }
-
-// std::string Lsof::getLink(std::string path)
-// {
-//     char buf[1024];
-//     ssize_t len = readlink(path.c_str(), buf, sizeof(buf));
-//     if (len != -1)
-//     {
-//         buf[len] = '\0';
-//         return std::string(buf, len);
-//     }
-//     else
-//     {
-//         // printf("path = %s\n", path.c_str());
-//         // TODO type need update(unknown)
-//         return path + MSG_PD;
-//     }
-// }
 
 int Lsof::getLink(std::string path, std::string &link)
 {
@@ -391,7 +332,7 @@ int Lsof::getDirList(std::string path, std::vector<std::string> &dirlist)
 int Lsof::checkDel(MSG &msg)
 {
     int head = 0;
-    int end = msg.name.find("(deleted)");
+    int end = msg.name.find(DEL_MSG);
     // printf("head %d, end %d \n",  head, end);
     if (end != -1) {
         msg.fd = FD_DEL;
