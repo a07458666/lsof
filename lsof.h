@@ -20,10 +20,10 @@ class Lsof{
         void getStat(std::string path);
         bool isNumber(const std::string& str);
         void getPidFolder(std::string pid);
-        std::string getCommand(std::string pid);
-        std::string getName(std::string pid);
-        std::string getINode(std::string path);
-        std::string getType(std::string path);
+        int getCommand(std::string pid, std::string &command);
+        int getUserName(std::string pid, std::string &userName);
+        int getINode(std::string path, std::string &inode);
+        int getType(std::string path, std::string &pathType);
         std::string getOpenMode(std::string path);
         int getLink(std::string path, std::string &link);
         int getDirList(std::string path, std::vector<std::string> &dirlist);

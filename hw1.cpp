@@ -22,7 +22,20 @@ int GetOpt(int argc, char* argv[],
             commandFilter.push_back(optarg);
             break;
         case 't':
-            typeFilter.push_back(optarg);
+            if (strcmp(optarg, "REG") == 0 ||
+                strcmp(optarg, "CHR") == 0 ||
+                strcmp(optarg, "DIR") == 0 || 
+                strcmp(optarg, "FIFO") == 0 || 
+                strcmp(optarg, "SOCK") == 0 ||
+                strcmp(optarg, "unknown") == 0)
+                {
+                    typeFilter.push_back(optarg);
+                }
+            else
+            {
+                fprintf(stderr, "Invalid TYPE option.\n");
+                exit(EXIT_FAILURE);
+            }
             break;
         case 'f':
             filenamesFilter.push_back(optarg);
@@ -30,7 +43,7 @@ int GetOpt(int argc, char* argv[],
         case 'h':
             printf("====help======\n");
             printf("-c REGEX: a regular expression (REGEX) filter for filtering command line. For example -c sh would match bash, zsh, and share.\n");
-            printf("-t TYPE: a TYPE filter. Valid TYPE includes REG, CHR, DIR, FIFO, SOCK, and unknown. TYPEs other than the listed should be considered invalid. For invalid types, your program has to print out an error message Invalid TYPE option. in a single line and terminate your program.\n");
+            printf("-t TYPE: a TYPE filter. Valid TYPE includes REG, CHR, DIR, FIFO, SOCK, and unknown. TYPEs other than the listed should be considered invalid. \n");
             printf("-f REGEX: a regular expression (REGEX) filter for filtering filenames.\n");
             printf("==============\n");
             break;
