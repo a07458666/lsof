@@ -136,6 +136,7 @@ int Lsof::getUserName(std::string pid, std::string &userName)
     }
     struct passwd *user;
     user = getpwuid(stoi(uid));
+    if (user == NULL) return ERR;
     userName = user->pw_name;
     // printf("%s, %s\n", uid.c_str(), user->pw_name);
     return 0;
